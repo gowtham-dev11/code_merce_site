@@ -4,6 +4,7 @@ export interface FrameMeta {
   localIndex: number;  // 1 to 60 for clip 1, 1 to 40 for clip 2
   filename: string;
   url: string;
+  webpUrl: string;
   phaseLabel: string;
 }
 
@@ -19,12 +20,14 @@ function pad3(num: number): string {
 export const CLIP_1_FRAMES: FrameMeta[] = Array.from({ length: CLIP_1_FRAME_COUNT }, (_, i) => {
   const localIndex = i + 1;
   const filename = `ezgif-frame-${pad3(localIndex)}.jpg`;
+  const webpFilename = `ezgif-frame-${pad3(localIndex)}.webp`;
   return {
     globalIndex: i,
     clip: 1,
     localIndex,
     filename,
     url: `/bunny-frames/clip1/${filename}`,
+    webpUrl: `/bunny-frames/clip1/${webpFilename}`,
     phaseLabel: 'Walking Right',
   };
 });
@@ -33,12 +36,14 @@ export const CLIP_1_FRAMES: FrameMeta[] = Array.from({ length: CLIP_1_FRAME_COUN
 export const CLIP_2_FRAMES: FrameMeta[] = Array.from({ length: CLIP_2_FRAME_COUNT }, (_, i) => {
   const localIndex = i + 1;
   const filename = `ezgif-frame-${pad3(localIndex)}.jpg`;
+  const webpFilename = `ezgif-frame-${pad3(localIndex)}.webp`;
   return {
     globalIndex: CLIP_1_FRAME_COUNT + i,
     clip: 2,
     localIndex,
     filename,
     url: `/bunny-frames/clip2/${filename}`,
+    webpUrl: `/bunny-frames/clip2/${webpFilename}`,
     phaseLabel: 'Turning & Pointing Left',
   };
 });

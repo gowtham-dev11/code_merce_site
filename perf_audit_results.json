@@ -1,0 +1,20 @@
+{
+  "domLoadedTimeMs": 1243,
+  "totalFramesRequested": 101,
+  "webpFramesLoaded": 100,
+  "jpgFramesLoaded": 1,
+  "networkErrorsCount": 0,
+  "networkErrors": [],
+  "consoleLogsCount": 1,
+  "consoleWarningsOrErrors": [],
+  "scrollPerformance": {
+    "averageFrameIntervalMs": 32,
+    "maxFrameIntervalMs": 48,
+    "scrollStepsTested": 60
+  },
+  "finalCanvas": {
+    "scrollY": 0,
+    "canvasWidth": 1920,
+    "canvasHeight": 1080
+  }
+}

@@ -40,10 +40,25 @@ function getBunnyFocalX(globalIndex: number): number {
   }
 }
 
+// Check WebP support synchronously for instant zero-latency asset negotiation
+const isWebpSupported = (() => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const elem = document.createElement('canvas');
+    if (elem.getContext && elem.getContext('2d')) {
+      return elem.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    }
+  } catch {
+    // fallback
+  }
+  return false;
+})();
+
 export const BunnyScrollAnimation: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
 
   // Content overlay refs for high-performance direct style updates without re-renders
   const homeOverlayRef = useRef<HTMLDivElement>(null);
@@ -53,24 +68,33 @@ export const BunnyScrollAnimation: React.FC = () => {
   // In-memory cache of HTMLImageElements (single instances, reused)
   const imagesRef = useRef<(HTMLImageElement | null)[]>(new Array(TOTAL_FRAME_COUNT).fill(null));
   const currentFrameRef = useRef<number>(0);
+  const lastDrawnImageRef = useRef<HTMLImageElement | null>(null);
+  const lastDrawnFrameIndexRef = useRef<number>(-1);
   const isLoadedMapRef = useRef<boolean[]>(new Array(TOTAL_FRAME_COUNT).fill(false));
+  const activeQueueRef = useRef<Set<number>>(new Set());
 
   // State for active navbar tab and accessibility
   const [activeTab, setActiveTab] = useState<string>('HOME');
   const [prefersReducedMotion, setPrefersReducedMotion] = useState<boolean>(false);
+  const prefersReducedMotionRef = useRef<boolean>(false);
   const [manualFrameIndex, setManualFrameIndex] = useState<number>(0);
 
   // Check reduced motion preference
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     setPrefersReducedMotion(mediaQuery.matches);
-    const handler = (e: MediaQueryListEvent) => setPrefersReducedMotion(e.matches);
+    prefersReducedMotionRef.current = mediaQuery.matches;
+    const handler = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+      prefersReducedMotionRef.current = e.matches;
+    };
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
   /**
-   * Responsive Canvas Frame Renderer
+   * High-Performance Responsive Canvas Frame Renderer
+   * Directly paints decoded bitmap with zero redundant redraws.
    * Automatically adapts composition between:
    * 1. Landscape / Desktop (aspect >= 1.2): Cinematic cover composition.
    * 2. Portrait Phones / Tablets (aspect < 1.2): Dynamic focal-point tracking so the
@@ -79,27 +103,43 @@ export const BunnyScrollAnimation: React.FC = () => {
   const renderFrame = useCallback((frameIndex: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d', { alpha: false });
+
+    if (!ctxRef.current) {
+      ctxRef.current =
+        canvas.getContext('2d', { alpha: false, desynchronized: true }) ||
+        canvas.getContext('2d', { alpha: false });
+    }
+    const ctx = ctxRef.current;
     if (!ctx) return;
 
     // Retrieve target image or nearest loaded neighbor
     let imgToDraw: HTMLImageElement | null = imagesRef.current[frameIndex] || null;
+    let actualSourceIndex = frameIndex;
+
     if (!imgToDraw || !imgToDraw.complete || imgToDraw.naturalWidth === 0) {
       for (let offset = 1; offset < TOTAL_FRAME_COUNT; offset++) {
         const prev = frameIndex - offset;
         const next = frameIndex + offset;
         if (prev >= 0 && imagesRef.current[prev]?.complete && imagesRef.current[prev]?.naturalWidth !== 0) {
           imgToDraw = imagesRef.current[prev];
+          actualSourceIndex = prev;
           break;
         }
         if (next < TOTAL_FRAME_COUNT && imagesRef.current[next]?.complete && imagesRef.current[next]?.naturalWidth !== 0) {
           imgToDraw = imagesRef.current[next];
+          actualSourceIndex = next;
           break;
         }
       }
     }
 
     if (!imgToDraw || !imgToDraw.complete || imgToDraw.naturalWidth === 0) {
+      return;
+    }
+
+    // Skip redundant drawing of the exact same image to the canvas
+    if (imgToDraw === lastDrawnImageRef.current && actualSourceIndex === lastDrawnFrameIndexRef.current) {
+      currentFrameRef.current = frameIndex;
       return;
     }
 
@@ -130,7 +170,7 @@ export const BunnyScrollAnimation: React.FC = () => {
       drawY = 0;
 
       // Center horizontally on the bunny's calculated focal point for this frame
-      const focalX = getBunnyFocalX(frameIndex) * scale;
+      const focalX = getBunnyFocalX(actualSourceIndex) * scale;
       const targetX = (canvasW / 2) - focalX;
 
       // Clamp horizontal draw position so no black/empty gaps appear beyond image borders
@@ -139,17 +179,19 @@ export const BunnyScrollAnimation: React.FC = () => {
       drawX = Math.max(minX, Math.min(maxX, targetX));
     }
 
-    // Direct draw without clearing to black (preserves authentic lighting & visual continuity)
+    // Direct blit with medium smoothing for instant rasterization without GPU stalls
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = 'medium';
     ctx.drawImage(imgToDraw, drawX, drawY, drawW, drawH);
 
+    lastDrawnImageRef.current = imgToDraw;
+    lastDrawnFrameIndexRef.current = actualSourceIndex;
     currentFrameRef.current = frameIndex;
   }, []);
 
   /**
    * Resizes canvas backing buffer based on window viewport dimensions and devicePixelRatio.
-   * Capped at DPR = 2 to prevent excessive GPU memory consumption on high-density mobile screens.
+   * Capped at DPR = 1.5 on desktop and DPR = 2 on mobile to prevent excessive GPU memory consumption.
    */
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -157,7 +199,8 @@ export const BunnyScrollAnimation: React.FC = () => {
 
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const maxDpr = w <= 1024 ? 2 : 1.5;
+    const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
 
     const targetW = Math.round(w * dpr);
     const targetH = Math.round(h * dpr);
@@ -165,65 +208,117 @@ export const BunnyScrollAnimation: React.FC = () => {
     if (canvas.width !== targetW || canvas.height !== targetH) {
       canvas.width = targetW;
       canvas.height = targetH;
+      ctxRef.current = null;
+      lastDrawnImageRef.current = null;
+      lastDrawnFrameIndexRef.current = -1;
       renderFrame(currentFrameRef.current);
     }
   }, [renderFrame]);
 
-  // Progressive, controlled image preloading suitable for mobile networks
+  // Progressive, prioritized asynchronous preloading with off-main-thread image decoding
   useEffect(() => {
     let isCancelled = false;
 
-    const loadFrame = (idx: number): Promise<void> => {
-      return new Promise((resolve) => {
-        if (imagesRef.current[idx]?.complete) {
-          resolve();
-          return;
-        }
+    const loadSingleFrame = async (idx: number): Promise<boolean> => {
+      if (imagesRef.current[idx]?.complete && imagesRef.current[idx]?.naturalWidth !== 0) {
+        return true;
+      }
+      if (activeQueueRef.current.has(idx)) {
+        return false;
+      }
+      activeQueueRef.current.add(idx);
+
+      return new Promise<boolean>((resolve) => {
         const img = new Image();
-        img.src = ALL_FRAMES[idx].url;
-        img.onload = () => {
-          if (isCancelled) return;
+        const primarySrc = isWebpSupported ? ALL_FRAMES[idx].webpUrl : ALL_FRAMES[idx].url;
+        const fallbackSrc = ALL_FRAMES[idx].url;
+        let triedFallback = !isWebpSupported;
+
+        const onImageSuccess = async () => {
+          if (isCancelled) {
+            activeQueueRef.current.delete(idx);
+            resolve(false);
+            return;
+          }
+
+          // Force off-main-thread bitmap decoding so canvas drawImage never blocks the main thread
+          if ('decode' in img) {
+            try {
+              await img.decode();
+            } catch {
+              // Proceed even if decode() throws
+            }
+          }
+
+          if (isCancelled) {
+            activeQueueRef.current.delete(idx);
+            resolve(false);
+            return;
+          }
+
           imagesRef.current[idx] = img;
           isLoadedMapRef.current[idx] = true;
+          activeQueueRef.current.delete(idx);
 
           // Draw frame 0 immediately when loaded
           if (idx === 0) {
             resizeCanvas();
             renderFrame(0);
+          } else if (currentFrameRef.current === idx || lastDrawnFrameIndexRef.current !== currentFrameRef.current) {
+            // If current scroll target was waiting for this frame or showing a neighbor fallback, redraw!
+            renderFrame(currentFrameRef.current);
           }
-          resolve();
+
+          resolve(true);
         };
+
+        img.onload = onImageSuccess;
         img.onerror = () => {
-          console.warn(`[BunnyScroll] Failed to load frame ${idx}: ${ALL_FRAMES[idx].url}`);
-          resolve();
+          if (!triedFallback) {
+            triedFallback = true;
+            img.src = fallbackSrc;
+          } else {
+            activeQueueRef.current.delete(idx);
+            console.warn(`[BunnyScroll] Failed to load frame ${idx}: ${fallbackSrc}`);
+            resolve(false);
+          }
         };
+
+        img.src = primarySrc;
       });
     };
 
-    const preloadAll = async () => {
-      // 1. Immediately load frame 0
-      await loadFrame(0);
+    const runPipeline = async () => {
+      // 1. Immediately load & decode critical Frame 0
+      await loadSingleFrame(0);
       if (isCancelled) return;
 
-      // 2. Load keyframes across both clips
-      const keyframes = [10, 20, 30, 40, 50, 59, 60, 70, 80, 90, 99];
-      await Promise.all(keyframes.map(loadFrame));
+      // 2. Load immediate scroll horizon (frames 1..15) so user scrolling has a smooth runway
+      const initialHorizon = Array.from({ length: 15 }, (_, i) => i + 1);
+      await Promise.all(initialHorizon.map(loadSingleFrame));
       if (isCancelled) return;
 
-      // 3. Concurrently load remaining frames in small batches of 6 (mobile-friendly)
-      const remaining: number[] = [];
-      for (let i = 0; i < TOTAL_FRAME_COUNT; i++) {
-        if (!imagesRef.current[i]) remaining.push(i);
+      // 3. Concurrently stream remaining frames (16..99) using a 6-worker concurrent pipeline
+      const pending: number[] = [];
+      for (let i = 16; i < TOTAL_FRAME_COUNT; i++) {
+        if (!imagesRef.current[i]) pending.push(i);
       }
 
-      const BATCH_SIZE = 6;
-      for (let i = 0; i < remaining.length; i += BATCH_SIZE) {
-        if (isCancelled) return;
-        await Promise.all(remaining.slice(i, i + BATCH_SIZE).map(loadFrame));
-      }
+      const CONCURRENCY = 6;
+      let nextIndex = 0;
+
+      const worker = async () => {
+        while (nextIndex < pending.length && !isCancelled) {
+          const idx = pending[nextIndex++];
+          await loadSingleFrame(idx);
+        }
+      };
+
+      const workers = Array.from({ length: CONCURRENCY }, () => worker());
+      await Promise.all(workers);
     };
 
-    preloadAll();
+    runPipeline();
 
     return () => {
       isCancelled = true;
@@ -296,7 +391,10 @@ export const BunnyScrollAnimation: React.FC = () => {
 
           if (targetFrame !== currentFrameRef.current) {
             renderFrame(targetFrame);
-            setManualFrameIndex(targetFrame);
+            // Only update manual slider state if accessible reduced motion is active
+            if (prefersReducedMotionRef.current) {
+              setManualFrameIndex(targetFrame);
+            }
           }
 
           // 2. Synchronize Home & About text transitions directly via DOM styles
