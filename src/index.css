@@ -1,0 +1,320 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #030712;
+  color: #f8fafc;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Responsive stage support for 100dvh */
+.mobile-stage {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+}
+
+#bunny-canvas {
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  display: block !important;
+  image-rendering: -webkit-optimize-contrast;
+  touch-action: pan-y; /* Ensure silky smooth native vertical touch scrolling */
+}
+
+/* Futuristic Gamified Typography & UI Utilities */
+.text-glow-orange {
+  color: #f97316;
+  text-shadow: 0 0 25px rgba(249, 115, 22, 0.8), 0 0 50px rgba(249, 115, 22, 0.45);
+}
+
+.text-glow-cyan {
+  color: #06b6d4;
+  text-shadow: 0 0 15px rgba(6, 182, 212, 0.6);
+}
+
+/* 
+  ==============================================================
+  SCALED RESPONSIVE TYPOGRAPHY & LAYOUT UTILITIES
+  Meticulously calibrated for all display scales:
+  - Mobile (320px - 639px): 36px - 42px
+  - Tablet (640px - 1023px): 48px - 56px
+  - Laptop / Scaled Desktop (1024px - 1439px): 64px - 74px
+  - Full HD Desktop (1440px - 1920px+): 84px - 94px
+  ==============================================================
+*/
+.hero-title {
+  font-size: 2.35rem; /* ~38px mobile */
+  line-height: 0.92;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+@media (min-width: 640px) {
+  .hero-title {
+    font-size: 3.25rem; /* ~52px tablet */
+    line-height: 0.92;
+  }
+}
+@media (min-width: 1024px) {
+  .hero-title {
+    font-size: 4.25rem; /* ~68px laptop */
+    line-height: 0.92;
+    letter-spacing: -0.035em;
+  }
+}
+@media (min-width: 1440px) {
+  .hero-title {
+    font-size: 5.25rem; /* ~84px desktop */
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+  }
+}
+@media (min-width: 1800px) {
+  .hero-title {
+    font-size: 5.75rem; /* ~92px large 1080p/2K desktop */
+    line-height: 0.9;
+  }
+}
+
+.about-title {
+  font-size: 2.15rem; /* ~34px mobile */
+  line-height: 0.94;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  text-transform: uppercase;
+}
+@media (min-width: 640px) {
+  .about-title {
+    font-size: 2.85rem; /* ~46px tablet */
+  }
+}
+@media (min-width: 1024px) {
+  .about-title {
+    font-size: 3.65rem; /* ~58px laptop */
+  }
+}
+@media (min-width: 1440px) {
+  .about-title {
+    font-size: 4.5rem; /* ~72px desktop */
+  }
+}
+@media (min-width: 1800px) {
+  .about-title {
+    font-size: 5rem; /* ~80px large desktop */
+  }
+}
+
+.hero-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+@media (min-width: 640px) {
+  .hero-desc {
+    font-size: 1.05rem;
+    line-height: 1.65;
+  }
+}
+@media (min-width: 1024px) {
+  .hero-desc {
+    font-size: 1.15rem; /* ~18.4px laptop */
+    line-height: 1.68;
+  }
+}
+@media (min-width: 1440px) {
+  .hero-desc {
+    font-size: 1.25rem; /* ~20px desktop */
+    line-height: 1.7;
+  }
+}
+
+.about-desc {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+@media (min-width: 640px) {
+  .about-desc {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+}
+@media (min-width: 1024px) {
+  .about-desc {
+    font-size: 1.075rem; /* ~17.2px laptop */
+    line-height: 1.7;
+  }
+}
+@media (min-width: 1440px) {
+  .about-desc {
+    font-size: 1.175rem; /* ~18.8px desktop */
+    line-height: 1.75;
+  }
+}
+
+.hero-btn {
+  font-size: 0.9rem;
+  padding: 0.85rem 1.65rem;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+@media (min-width: 640px) {
+  .hero-btn {
+    font-size: 0.95rem;
+    padding: 0.95rem 1.95rem;
+  }
+}
+@media (min-width: 1024px) {
+  .hero-btn {
+    font-size: 1.05rem;
+    padding: 1.05rem 2.25rem;
+  }
+}
+@media (min-width: 1440px) {
+  .hero-btn {
+    font-size: 1.125rem;
+    padding: 1.15rem 2.5rem;
+  }
+}
+
+.tech-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+@media (min-width: 640px) {
+  .tech-label {
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+  }
+}
+@media (min-width: 1024px) {
+  .tech-label {
+    font-size: 0.825rem;
+    letter-spacing: 0.18em;
+  }
+}
+@media (min-width: 1440px) {
+  .tech-label {
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+  }
+}
+
+.value-pill {
+  font-size: 0.8rem;
+  padding: 0.55rem 1rem;
+}
+@media (min-width: 640px) {
+  .value-pill {
+    font-size: 0.85rem;
+    padding: 0.65rem 1.2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .value-pill {
+    font-size: 0.95rem;
+    padding: 0.75rem 1.35rem;
+  }
+}
+@media (min-width: 1440px) {
+  .value-pill {
+    font-size: 1.05rem;
+    padding: 0.85rem 1.55rem;
+  }
+}
+
+/* Corner Bracket Button (Substantial, deliberate gaming CTA) */
+.corner-bracket-btn {
+  position: relative;
+  border: 1.5px solid rgba(249, 115, 22, 0.5);
+  background: rgba(11, 17, 32, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.corner-bracket-btn::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 12px;
+  height: 12px;
+  border-top: 3px solid #f97316;
+  border-left: 3px solid #f97316;
+}
+.corner-bracket-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-bottom: 3px solid #f97316;
+  border-right: 3px solid #f97316;
+}
+
+/* Corner Bracket Box (for social bar and technical tags) */
+.corner-bracket-box {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 13, 24, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.corner-bracket-box::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid #f97316;
+  border-left: 2px solid #f97316;
+}
+.corner-bracket-box::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-bottom: 2px solid #f97316;
+  border-right: 2px solid #f97316;
+}
+
+/* 
+  ==============================================================
+  GLASSMORPHISM SITE HEADER
+  Transparent, blurred glass styling for premium futuristic navbar
+  ==============================================================
+*/
+.site-header {
+  background: rgba(3, 7, 18, 0.42);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+  backdrop-filter: blur(16px) saturate(135%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(16px)) or (backdrop-filter: blur(16px))) {
+  .site-header {
+    background: rgba(3, 7, 18, 0.88);
+  }
+}
